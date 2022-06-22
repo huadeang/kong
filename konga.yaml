@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: konga
+  name: konga
+  namespace: kong
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: konga
+  template:
+    metadata:
+      labels:
+        app: konga
+    spec:
+      containers:
+      - env:
+        - name: DB_ADAPTER
+          value: postgres
+        - name: DB_URI
+          value: postgresql://kong:kongpass@postgres:5432/konga
+        - name: NODE_ENV
+          value: production
+        image: pantsel/konga:latest
+        name: konga
+        ports:
+        - containerPort: 1337
+          name: konga
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+      tolerations:
+        - key: kubernetes.azure.com/scalesetpriority
+          operator: Equal
+          value: spot
+          effect: NoSchedule        
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: konga-prepare
+  namespace: kong
+spec:
+  template:
+    metadata:
+      name: konga-prepare
+    spec:
+      containers:
+      - command:
+        - /app/start.sh
+        - -c
+        - prepare
+        - -a 
+        - postgres 
+        - -u 
+        - postgresql://kong:kongpass@postgres:5432/konga
+        image: pantsel/konga:latest
+        name: konga-prepare
+      initContainers:
+      - command:
+        - /bin/sh
+        - -c
+        - until nc -zv $KONG_PG_HOST $KONG_PG_PORT -w1; do echo 'waiting for db';
+          sleep 1; done
+        env:
+        - name: KONG_PG_HOST
+          value: postgres
+        - name: KONG_PG_PORT
+          value: "5432"
+        image: busybox
+        name: wait-for-postgres
+      restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: konga
+  namespace: kong
+spec:
+  ports:
+  - name: konga
+    port: 1337
+    protocol: TCP
+    targetPort: 1337
+  selector:
+    app: konga
+  type: ClusterIP
