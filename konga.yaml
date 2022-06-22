@@ -20,7 +20,7 @@ spec:
         - name: DB_ADAPTER
           value: postgres
         - name: DB_URI
-          value: postgresql://kong:kongpass@postgres:5432/konga
+          value: postgresql://kong:kong@postgres:5432/konga
         - name: NODE_ENV
           value: production
         image: pantsel/konga:latest
@@ -57,7 +57,7 @@ spec:
         - -a 
         - postgres 
         - -u 
-        - postgresql://kong:kongpass@postgres:5432/konga
+        - postgresql://kong:kong@postgres:5432/konga
         image: pantsel/konga:latest
         name: konga-prepare
       initContainers:
