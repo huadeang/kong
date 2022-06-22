@@ -88,4 +88,4 @@ spec:
     targetPort: 1337
   selector:
     app: konga
-  type: ClusterIP
+  type: NodePort
