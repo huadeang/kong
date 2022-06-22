@@ -1420,7 +1420,29 @@ spec:
     targetPort: 8443
   selector:
     app: ingress-kong
-  type: LoadBalancer
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
+    service.beta.kubernetes.io/aws-load-balancer-type: nlb
+  name: kong-admin
+  namespace: kong
+spec:
+  ports:
+  - name: proxy
+    port: 8001
+    protocol: TCP
+    targetPort: 8001
+  - name: proxy-ssl
+    port: 8444
+    protocol: TCP
+    targetPort: 8444
+  selector:
+    app: ingress-kong
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
@@ -1484,7 +1506,7 @@ spec:
         - name: KONG_PORT_MAPS
           value: 80:8000, 443:8443
         - name: KONG_ADMIN_LISTEN
-          value: 127.0.0.1:8444 ssl
+          value: 0.0.0.0:8001 0.0.0.0:8444 ssl
         - name: KONG_STATUS_LISTEN
           value: 0.0.0.0:8100
         - name: KONG_NGINX_WORKER_PROCESSES
